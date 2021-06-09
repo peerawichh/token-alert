@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message Query {
+  string method = 1;
+  string params = 2;
+}

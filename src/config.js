@@ -1,0 +1,9 @@
+module.exports.TM_RPC_IP = process.env.TM_RPC_IP || '172.16.1.5'
+module.exports.TM_RPC_PORT = process.env.TM_RPC_PORT || 26000
+module.exports.TOKEN_THRESHOLD_TO_ALERT = process.env.TOKEN_THRESHOLD_TO_ALERT || 10000
+module.exports.LINE_GROUP_TOKEN = process.env.LINE_GROUP_TOKEN || 'RyXZ1Zu0vIpqk9IeRn4WOPBbzXShQmxw9SoCrZlwCfJ';
+module.exports.CRON_MINUTE = process.env.CRON_MINUTE || '*';
+module.exports.CRON_HOUR = process.env.CRON_HOUR|| '*';
+module.exports.CRON_DAY_OF_MONTH = process.env.CRON_DAY_OF_MONTH || '*';
+module.exports.CRON_MONTH = process.env.CRON_MONTH || '*';
+module.exports.CRON_DAY_OF_WEEK = process.env.CRON_DAY_OF_WEEK || '*';

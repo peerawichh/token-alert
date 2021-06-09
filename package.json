@@ -1,0 +1,17 @@
+{
+  "name": "token-alert",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-cron": "^3.0.0",
+    "node-fetch": "^2.6.1",
+    "protobufjs": "^6.11.2"
+  }
+}
