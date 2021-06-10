@@ -15,22 +15,18 @@ function lineNotify(message) {
         method: 'POST',
         headers: headers,
         body: body
-      };
+    };
 
-    try {
-        body.append("message", message);
+    body.append("message", message);
 
-        fetch(url, request_options)
-        .then(() => {
-            
-        })
-        .catch((err) => {
-            console.log('Error sending LINE notification: '+err.status);
-        });
+    fetch(url, request_options)
+    .then(() => {
 
-    } catch (err) {
-        throw err;
-    }
+    })
+    .catch((err) => {
+        console.log('Error sending LINE notification: ' + err.status);
+    });
+
 }
 
 module.exports = {

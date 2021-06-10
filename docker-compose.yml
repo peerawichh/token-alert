@@ -3,7 +3,7 @@ services:
     token-alert:
         build: .
         ports:
-            - ${PORT:-3000}:${PORT:-3000}
+            - ${PORT:-7000}:${PORT:-7000}
         environment:
             - TM_RPC_IP=${TM_RPC_IP}
             - TM_RPC_PORT=${TM_RPC_PORT}
@@ -14,4 +14,5 @@ services:
             - CRON_DAY_OF_MONTH=${CRON_DAY_OF_MONTH}
             - CRON_MONTH=${CRON_MONTH}
             - CRON_DAY_OF_WEEK=${CRON_DAY_OF_WEEK}
+            - UNCONDITIONAL_NODE_LIST=${UNCONDITIONAL_NODE_LIST}
         restart: unless-stopped

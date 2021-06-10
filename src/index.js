@@ -3,8 +3,8 @@ const config = require('./config');
 const notifty = require('./notify');
 const cron = require('node-cron');
 
-const CRON_TAB = `${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`;
-cron.schedule(CRON_TAB, checkNodeToken);
+// const CRON_TAB = `${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`;
+// cron.schedule(CRON_TAB, checkNodeToken);
 
 async function checkNodeToken() {
     console.log('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
@@ -16,11 +16,10 @@ async function checkNodeToken() {
         let queriedNodeIDList = await queryNodeByTokenAmount(node_id_list);
         node_id_list = null;
 
-        if (queriedNodeIDList.length === 0){
-            console.log(`No nodes with token amount of below ${config.TOKEN_THRESHOLD_TO_ALERT} were detected\n`)
-            notifty.lineNotify(`No nodes with token amount of below ${config.TOKEN_THRESHOLD_TO_ALERT} were detected`);
-            return;
-        }
+        // if (queriedNodeIDList.length === config.UNCONDITIONAL_NODE_LIST.split(',').length){
+        //     console.log(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT}) were detected\n`)
+        //     notifty.lineNotify(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT}) were detected`);
+        // }
 
         const nodeListGroupedByMarketingName = await groupNodesByMarketingName(queriedNodeIDList);
         const Orgs = Object.keys(nodeListGroupedByMarketingName);
@@ -56,8 +55,17 @@ async function queryNodeByTokenAmount(node_id_list) {
 
         let queriedNode = node_id_list.map(async (node) => {
             const result = await tendermint.query('GetNodeToken', { node_id: node });
+            const node_info = await getNodeInfo(node);
+            const unconditional_node_list = config.UNCONDITIONAL_NODE_LIST.split(',');
+            if (unconditional_node_list.includes(node)){
+                return {
+                    node_id: node,
+                    token: result.amount,
+                    node_name: node_info.marketing_name_en,
+                    role: node_info.role
+                }
+            }
             if (result.amount < config.TOKEN_THRESHOLD_TO_ALERT) {
-                const node_info = await getNodeInfo(node);
                 return {
                     node_id: node,
                     token: result.amount,
@@ -93,3 +101,5 @@ async function getNodeInfo(node_id) {
         throw err;
     }
 }
+
+checkNodeToken();
