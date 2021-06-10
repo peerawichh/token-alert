@@ -16,10 +16,10 @@ async function checkNodeToken() {
         let queriedNodeIDList = await queryNodeByTokenAmount(node_id_list);
         node_id_list = null;
 
-        // if (queriedNodeIDList.length === config.UNCONDITIONAL_NODE_LIST.split(',').length){
-        //     console.log(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT}) were detected\n`)
-        //     notifty.lineNotify(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT}) were detected`);
-        // }
+        if (queriedNodeIDList.length === config.UNCONDITIONAL_NODE_LIST.split(',').length){
+            console.log(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT}) were detected\n`)
+            await notifty.lineNotify(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT}) were detected`);
+        }
 
         const nodeListGroupedByMarketingName = await groupNodesByMarketingName(queriedNodeIDList);
         const Orgs = Object.keys(nodeListGroupedByMarketingName);

@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const config = require('./config');
 
-function lineNotify(message) {
+async function lineNotify(message) {
 
     const url = "https://notify-api.line.me/api/notify";
 
@@ -24,7 +24,7 @@ function lineNotify(message) {
 
     })
     .catch((err) => {
-        console.log('Error sending LINE notification: ' + err.status);
+        throw err;
     });
 
 }
