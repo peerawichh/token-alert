@@ -7,4 +7,4 @@ module.exports.CRON_HOUR = process.env.CRON_HOUR|| '*';
 module.exports.CRON_DAY_OF_MONTH = process.env.CRON_DAY_OF_MONTH || '*';
 module.exports.CRON_MONTH = process.env.CRON_MONTH || '*';
 module.exports.CRON_DAY_OF_WEEK = process.env.CRON_DAY_OF_WEEK || '*';
-module.exports.UNCONDITIONAL_NODE_LIST = process.env.UNCONDITIONAL_NODE_LIST || '4CD0D47D-7942-4063-9E06-F387D6B0423F';
+module.exports.UNCONDITIONAL_NODE_LIST = process.env.UNCONDITIONAL_NODE_LIST || '';

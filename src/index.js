@@ -3,8 +3,8 @@ const config = require('./config');
 const notifty = require('./notify');
 const cron = require('node-cron');
 
-// const CRON_TAB = `${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`;
-// cron.schedule(CRON_TAB, checkNodeToken);
+const CRON_TAB = `${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`;
+cron.schedule(CRON_TAB, checkNodeToken);
 
 async function checkNodeToken() {
     console.log('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
@@ -101,5 +101,3 @@ async function getNodeInfo(node_id) {
         throw err;
     }
 }
-
-checkNodeToken();
