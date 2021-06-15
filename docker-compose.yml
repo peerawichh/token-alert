@@ -15,4 +15,6 @@ services:
             - CRON_MONTH=${CRON_MONTH}
             - CRON_DAY_OF_WEEK=${CRON_DAY_OF_WEEK}
             - UNCONDITIONAL_NODE_LIST=${UNCONDITIONAL_NODE_LIST}
+        volumes:
+            - ./data:/app/data
         restart: unless-stopped
