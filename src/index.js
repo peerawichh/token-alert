@@ -7,21 +7,20 @@ const path = require('path');
 const { parse } = require('path');
 
 const CRON_TAB_1 = `${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`;
-const CRON_TAB_2 = `5 ${config.CRON_MINUTE} ${config.CRON_HOUR.split(',')[1]} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`
+const CRON_TAB_2 = `3 ${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`
 cron.schedule(CRON_TAB_1, checkNodeToken);
 cron.schedule(CRON_TAB_2, checkUnconditionalNodeToken);
 
 async function checkNodeToken() {
-    console.log('------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n')
-    console.log('                                                       |--------------------------------------------------------------------------|');
-    console.log(`                                                       |  Cron Job started at ${Date()}  |`);
-    console.log('                                                       |--------------------------------------------------------------------------|\n');
+
+    console.log(`\n\n\n\n\nCron Job started at ${Date()}`);
+
     try {
         let node_id_list = await getNodeIDByRole('');
         let queriedNodeIDList = await queryNodeByTokenAmount(node_id_list);
 
         if (queriedNodeIDList.length === 0) {
-            console.log(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT}) were detected\n`)
+            console.log(`\n\nNo nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT}) were detected\n`)
             await notifty.lineNotify(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT}) were detected`);
             return;
         }
@@ -35,7 +34,7 @@ async function checkNodeToken() {
             nodeList.forEach(node => {
                 message = message.concat(`\n\n${node.node_id} (${node.role}): ${node.token} ${node.token > 1 ? 'tokens' : 'token'} left`);
             });
-            console.log(`Notifying low token amount of ${Org}: ${nodeList.length} ${nodeList.length > 1 ? 'nodes' : 'node'} in total\n`);
+            console.log(`\nNotifying low token amount of ${Org}: ${nodeList.length} ${nodeList.length > 1 ? 'nodes' : 'node'} in total\n`);
             notifty.lineNotify(message);
         });
 
@@ -68,29 +67,34 @@ async function checkUnconditionalNodeToken() {
 
         node_id_list.forEach(async (node) => {
 
-            const fileName = `${node.node_id}-latest-token-amount`
-            const filePath = path.join(__dirname, '..', 'data', fileName);
-            let latestTokenAmount;
+            let message = `${node.node_name}\n\n${node.node_id} (${node.role}): ${node.token} ${node.token > 1 ? 'tokens' : 'token'} left`;
 
-            try {
-                latestTokenAmount = fs.readFileSync(filePath);
+            if (new Date().getHours() == config.CRON_HOUR.split(',')[1]) {
 
-            } catch (err) {
-                
-            }
+                const fileName = `${node.node_id}-latest-token-amount`
+                const filePath = path.join(__dirname, '..', 'data', fileName);
+                let latestTokenAmount;
 
-            let message = `${node.node_name}\n\n${node.node_id} (${node.role}): ${node.token} ${node.token > 1 ? 'tokens' : 'token'} left`
+                try {
+                    latestTokenAmount = fs.readFileSync(filePath);
     
-            if (latestTokenAmount != null) {
-                message = message.concat(`\n\n${parseInt(latestTokenAmount) - parseInt(node.token)} total tokens used over the previous 24 hours`)
-            }
-
-            fs.writeFile(filePath, node.token.toString(), (err) => {
-                if (err) {
-                    console.log(err);
+                } catch (err) {
+                    console.log(`\n${fileName} | File not found`);
                 }
-                console.log(`New latest token amount saved to file named ${fileName} | ${node.token}`);
-            });
+
+                if (latestTokenAmount != null) {
+                    message = message.concat(`\n\n${parseInt(latestTokenAmount) - parseInt(node.token)} total tokens used over the previous 24 hours`)
+                }
+    
+                fs.writeFile(filePath, node.token.toString(), (err) => {
+
+                    if (err) {
+                        console.log(err);
+                    }
+                    console.log(`\nNew latest token amount saved to file named ${fileName} | ${node.token}`);
+                });
+
+            }
 
             notifty.lineNotify(message);
 
