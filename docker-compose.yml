@@ -14,6 +14,7 @@ services:
             - CRON_DAY_OF_MONTH=${CRON_DAY_OF_MONTH}
             - CRON_MONTH=${CRON_MONTH}
             - CRON_DAY_OF_WEEK=${CRON_DAY_OF_WEEK}
+            - CRON_MINUTE_READ_BLOCKS=${CRON_MINUTE_READ_BLOCKS}
             - UNCONDITIONAL_NODE_LIST=${UNCONDITIONAL_NODE_LIST}
         volumes:
             - ./data:/app/data

@@ -11,10 +11,9 @@ const path = require('path');
 const CRON_TAB_1 = `${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`;
 const CRON_TAB_2 = `3 ${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`;
 
-// cron.schedule(CRON_TAB_1, checkNodeToken);
-// cron.schedule(CRON_TAB_2, checkUnconditionalNodeToken);
-cron.schedule('0 * * * * *', checkUnconditionalNodeToken);
-cron.schedule('30 * * * * *', readBlockIntervals);
+cron.schedule(CRON_TAB_1, checkNodeToken);
+cron.schedule(CRON_TAB_2, checkUnconditionalNodeToken);
+cron.schedule(`${config.CRON_MINUTE_READ_BLOCKS} * * * *`, readBlockIntervals);
 
 initFiles();
 
