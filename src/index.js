@@ -255,7 +255,7 @@ function initFiles() {
         }
 
         await Promise.all(promises);
-        console.log(`${promises.length} ${promises > 1 ? 'files' : 'file'} initialized`);
+        console.log(`${promises.length} ${promises.length > 1 ? 'files' : 'file'} initialized`);
 
     });
 }
