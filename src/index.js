@@ -1,15 +1,22 @@
 const tendermint = require('./tendermint');
 const config = require('./config');
 const notifty = require('./notify');
+const { findTxAddNodeToken, getCurrentHeight } = require('./findTx');
+const fileHandler = require('./fileHandler');
+
 const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
-const { parse } = require('path');
 
 const CRON_TAB_1 = `${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`;
-const CRON_TAB_2 = `3 ${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`
-cron.schedule(CRON_TAB_1, checkNodeToken);
-cron.schedule(CRON_TAB_2, checkUnconditionalNodeToken);
+const CRON_TAB_2 = `3 ${config.CRON_MINUTE} ${config.CRON_HOUR} ${config.CRON_DAY_OF_MONTH} ${config.CRON_MONTH} ${config.CRON_DAY_OF_WEEK}`;
+
+// cron.schedule(CRON_TAB_1, checkNodeToken);
+// cron.schedule(CRON_TAB_2, checkUnconditionalNodeToken);
+cron.schedule('0 * * * * *', checkUnconditionalNodeToken);
+cron.schedule('30 * * * * *', readBlockIntervals);
+
+initFiles();
 
 async function checkNodeToken() {
 
@@ -32,7 +39,7 @@ async function checkNodeToken() {
             let nodeList = nodeListGroupedByMarketingName[Org];
             let message = `${Org}`;
             nodeList.forEach(node => {
-                message = message.concat(`\n\n${node.node_id} (${node.role}): ${node.token} ${node.token > 1 ? 'tokens' : 'token'} left`);
+                message = message.concat(`\n\n${node.node_id} (${node.role}): ${node.token.toLocaleString()} ${node.token > 1 ? 'tokens' : 'token'} left`);
             });
             console.log(`\nNotifying low token amount of ${Org}: ${nodeList.length} ${nodeList.length > 1 ? 'nodes' : 'node'} in total\n`);
             notifty.lineNotify(message);
@@ -50,12 +57,12 @@ async function checkUnconditionalNodeToken() {
         let node_id_list = config.UNCONDITIONAL_NODE_LIST.split(',');
         node_id_list = node_id_list.map(async (node) => {
 
-            const result = await tendermint.query('GetNodeToken', { node_id: node });
+            const { queryResult, blockHeight } = await tendermint.query('GetNodeToken', { node_id: node });
             const node_info = await getNodeInfo(node);
 
             return {
                 node_id: node,
-                token: result.amount,
+                token: queryResult.amount,
                 node_name: node_info.marketing_name_en,
                 role: node_info.role
             }
@@ -63,46 +70,95 @@ async function checkUnconditionalNodeToken() {
         });
 
         node_id_list = await Promise.all(node_id_list);
-        node_id_list = node_id_list.filter(node => typeof node !== 'undefined');;
+        node_id_list = node_id_list.filter(node => typeof node !== 'undefined');
 
-        node_id_list.forEach(async (node) => {
+        node_id_list.forEach(async node => {
 
-            let message = `${node.node_name}\n\n${node.node_id} (${node.role}): ${node.token} ${node.token > 1 ? 'tokens' : 'token'} left`;
+            let message = `${node.node_name}\n\nNode ID: ${node.node_id}\n\nRole: ${node.role === 'IDP' ? 'IdP' : node.role}\n\nCurrent token amount: ${node.token.toLocaleString()}`;
+
+            const latestTokenAmountFileName = `${node.node_id}-latest-token-amount`
+            const latestTokenAmountFilePath = path.join(__dirname, '..', 'data', latestTokenAmountFileName);
+            const latestTokenAddedFileName = `${node.node_id}-total-token-added`
+            const latestTokenAddedFilePath = path.join(__dirname, '..', 'data', latestTokenAddedFileName);
 
             if (new Date().getHours() == config.CRON_HOUR.split(',')[1]) {
 
-                const fileName = `${node.node_id}-latest-token-amount`
-                const filePath = path.join(__dirname, '..', 'data', fileName);
-                let latestTokenAmount;
+                let latestTokenAmount, latestTokenAdded;
 
                 try {
-                    latestTokenAmount = fs.readFileSync(filePath);
-    
+                    latestTokenAmount = parseInt(fs.readFileSync(latestTokenAmountFilePath));
+                    latestTokenAdded = parseInt(fs.readFileSync(latestTokenAddedFilePath));
+
                 } catch (err) {
-                    console.log(`\n${fileName} | File not found`);
+                    console.log(`File not found`);
                 }
 
-                if (latestTokenAmount != null) {
-                    message = message.concat(`\n\n${parseInt(latestTokenAmount) - parseInt(node.token)} total tokens used over the previous 24 hours`)
-                }
-    
-                fs.writeFile(filePath, node.token.toString(), (err) => {
+                let foundTokenAdded = await findTxAddNodeToken(node.node_id);
+                let totalTokenAdded = latestTokenAdded + foundTokenAdded;
 
-                    if (err) {
-                        console.log(err);
-                    }
-                    console.log(`\nNew latest token amount saved to file named ${fileName} | ${node.token}`);
-                });
+                if (latestTokenAmount !== 0) {
+
+                    let totalTokenUsed = (latestTokenAmount - parseInt(node.token)) + totalTokenAdded;
+
+                    message = message.concat(`\n\n${totalTokenUsed.toLocaleString()} total tokens used over the past 24 hours`);
+                    console.log(`total token used = ${totalTokenUsed} (${latestTokenAmount} - ${node.token}) + ${totalTokenAdded}`);
+
+                }
+
+                if (totalTokenAdded > 0) {
+                    message = message.concat(`\n\n${totalTokenAdded.toLocaleString()} tokens added during the past 24 hours`);
+                }
 
             }
 
-            notifty.lineNotify(message);
+            await notifty.lineNotify(message);
+
+            await Promise.all(
+                [
+                    fileHandler.writeFile(latestTokenAddedFilePath, '0'),
+                    fileHandler.writeFile(latestTokenAmountFilePath, (node.token).toString())
+                ]
+            );
 
         });
 
     } catch (err) {
         console.log(err);
     }
+}
+
+async function readBlockIntervals() {
+
+    let node_id_list = config.UNCONDITIONAL_NODE_LIST.split(',');
+
+    node_id_list.forEach(async node_id => {
+
+        const latestTokenAddedFileName = `${node_id}-total-token-added`
+        const latestTokenAddedFilePath = path.join(__dirname, '..', 'data', latestTokenAddedFileName);
+        let latestTokenAdded;
+
+        try {
+            latestTokenAdded = parseInt(fs.readFileSync(latestTokenAddedFilePath));
+        } catch (err) {
+            console.log(`Cannot read file ${latestTokenAddedFileName}`);
+        }
+
+        if (latestTokenAdded == null) {
+            latestTokenAdded = 0;
+        }
+
+        let foundTokenAdded = await findTxAddNodeToken(node_id);
+
+        if (foundTokenAdded > 0) {
+
+            if (latestTokenAdded > 0) {
+                foundTokenAdded = foundTokenAdded + latestTokenAdded;
+            }
+
+            await fileHandler.writeFile(latestTokenAddedFilePath, foundTokenAdded.toString());
+
+        }
+    });
 }
 
 async function groupNodesByMarketingName(node_id_list) {
@@ -125,22 +181,13 @@ async function queryNodeByTokenAmount(node_id_list) {
                 return undefined;
             }
 
-            const result = await tendermint.query('GetNodeToken', { node_id: node });
+            const { queryResult } = await tendermint.query('GetNodeToken', { node_id: node });
             const node_info = await getNodeInfo(node);
-            // const unconditional_node_list = config.UNCONDITIONAL_NODE_LIST.split(',');
-            // if (unconditional_node_list.includes(node)){
-            //     return {
-            //         node_id: node,
-            //         token: result.amount,
-            //         node_name: node_info.marketing_name_en,
-            //         role: node_info.role
-            //     }
-            // }
 
-            if (result.amount < config.TOKEN_THRESHOLD_TO_ALERT) {
+            if (queryResult.amount < config.TOKEN_THRESHOLD_TO_ALERT) {
                 return {
                     node_id: node,
-                    token: result.amount,
+                    token: queryResult.amount,
                     node_name: node_info.marketing_name_en,
                     role: node_info.role
                 }
@@ -158,8 +205,8 @@ async function queryNodeByTokenAmount(node_id_list) {
 
 async function getNodeIDByRole(role) {
     try {
-        const result = await tendermint.query('GetNodeIDList', { role: role });
-        return result.node_id_list;
+        const { queryResult } = await tendermint.query('GetNodeIDList', { role: role });
+        return queryResult.node_id_list;
     } catch (err) {
         throw err;
     }
@@ -167,9 +214,49 @@ async function getNodeIDByRole(role) {
 
 async function getNodeInfo(node_id) {
     try {
-        const result = await tendermint.query('GetNodeInfo', { node_id: node_id });
-        return JSON.parse(result.node_name);
+        const { queryResult } = await tendermint.query('GetNodeInfo', { node_id: node_id });
+        return JSON.parse(queryResult.node_name);
     } catch (err) {
         throw err;
     }
+}
+
+function initFiles() {
+
+    const node_id_list = config.UNCONDITIONAL_NODE_LIST.split(',');
+
+    node_id_list.forEach(async node_id => {
+
+        const latestTokenAmountFileName = `${node_id}-latest-token-amount`
+        const latestTokenAmountFilePath = path.join(__dirname, '..', 'data', latestTokenAmountFileName);
+
+        const latestTokenAddedFileName = `${node_id}-total-token-added`
+        const latestTokenAddedFilePath = path.join(__dirname, '..', 'data', latestTokenAddedFileName);
+
+        const latestBlockHeightFileName = `${node_id}-latest-block-height`
+        const latestBlockHeightFilePath = path.join(__dirname, '..', 'data', latestBlockHeightFileName);
+
+        let promises = [];
+
+        try {
+
+            if (!fs.existsSync(latestTokenAmountFilePath)) {
+                promises.push(fileHandler.writeFile(latestTokenAmountFilePath, '0'));
+            }
+            if (!fs.existsSync(latestTokenAddedFilePath)) {
+                promises.push(fileHandler.writeFile(latestTokenAddedFilePath, '0'));
+            }
+            if (!fs.existsSync(latestBlockHeightFilePath)) {
+                let height = await getCurrentHeight();
+                promises.push(fileHandler.writeFile(latestBlockHeightFilePath, height.toString()));
+            }
+
+        } catch (err) {
+            console.log(err);
+        }
+
+        await Promise.all(promises);
+        console.log(`${promises.length} ${promises > 1 ? 'files' : 'file'} initialized`);
+
+    });
 }

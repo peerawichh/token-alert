@@ -9,6 +9,7 @@ const tendermintProtobufRoot = tendermintProtobufRootInstance.loadSync(
     { keepCase: true }
   );
 const TendermintQuery = tendermintProtobufRoot.lookupType('Query');
+const TendermintTx = tendermintProtobufRoot.lookupType('Tx');
 
 async function query(fnName, param){
 
@@ -41,7 +42,16 @@ async function query(fnName, param){
             throw new Error('Tendermint Query Error');
         }
 
-        return JSON.parse(Buffer.from(resultJson.result.response.value, 'base64'));
+        // return JSON.parse(Buffer.from(resultJson.result.response.value, 'base64'));
+        // console.log(JSON.parse(Buffer.from(resultJson.result.response.value, 'base64')));
+        // console.log(resultJson);
+        const queryResult = JSON.parse(Buffer.from(resultJson.result.response.value, 'base64'));
+        const blockHeight = resultJson.result.response.height;
+
+        return {
+            queryResult, 
+            blockHeight
+        }
 
     } catch(err){
         throw err;
@@ -49,5 +59,6 @@ async function query(fnName, param){
 }
 
 module.exports = {
-    query
+    query,
+    TendermintTx
 }
