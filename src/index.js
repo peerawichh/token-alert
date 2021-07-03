@@ -108,16 +108,16 @@ async function checkUnconditionalNodeToken() {
                     message = message.concat(`\n\n${totalTokenAdded.toLocaleString()} tokens added during the past 24 hours`);
                 }
 
+                await Promise.all(
+                    [
+                        fileHandler.writeFile(latestTokenAddedFilePath, '0'),
+                        fileHandler.writeFile(latestTokenAmountFilePath, (node.token).toString())
+                    ]
+                );
+
             }
 
             await notifty.lineNotify(message);
-
-            await Promise.all(
-                [
-                    fileHandler.writeFile(latestTokenAddedFilePath, '0'),
-                    fileHandler.writeFile(latestTokenAmountFilePath, (node.token).toString())
-                ]
-            );
 
         });
 
