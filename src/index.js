@@ -26,8 +26,8 @@ async function checkNodeToken() {
         let queriedNodeIDList = await queryNodeByTokenAmount(node_id_list);
 
         if (queriedNodeIDList.length === 0) {
-            console.log(`\n\nNo nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT.toLocaleString}) were detected\n`)
-            await notifty.lineNotify(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT.toLocaleString}) were detected`);
+            console.log(`\n\nNo nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT.toLocaleString()}) were detected\n`)
+            await notifty.lineNotify(`No nodes with token amount below the threshold (${config.TOKEN_THRESHOLD_TO_ALERT.toLocaleString()}) were detected`);
             return;
         }
 
